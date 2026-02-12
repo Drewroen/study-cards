@@ -65,6 +65,7 @@ const cancelBtn = document.getElementById('cancel-btn');
 const manageBtn = document.getElementById('manage-btn');
 const manageModal = document.getElementById('manage-modal');
 const closeModal = document.getElementById('close-modal');
+const exportBtn = document.getElementById('export-btn');
 const addCardBtn = document.getElementById('add-card-btn');
 const deleteCardBtn = document.getElementById('delete-card-btn');
 const addCardModal = document.getElementById('add-card-modal');
@@ -401,6 +402,32 @@ function handleDeleteCard() {
     displayCard();
 }
 
+function handleExport() {
+    if (!currentSetName) {
+        alert('No card set selected to export.');
+        return;
+    }
+
+    // Create export object with current set
+    const exportData = {
+        [currentSetName]: cardSets[currentSetName]
+    };
+
+    // Convert to JSON string
+    const jsonString = JSON.stringify(exportData, null, 2);
+
+    // Create blob and download
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${currentSetName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
 // Event listeners
 card.addEventListener('click', flipCard);
 nextBtn.addEventListener('click', nextCard);
@@ -435,6 +462,7 @@ cancelAddCard.addEventListener('click', () => {
 });
 saveCardBtn.addEventListener('click', handleAddCard);
 deleteCardBtn.addEventListener('click', handleDeleteCard);
+exportBtn.addEventListener('click', handleExport);
 
 // Keyboard navigation
 document.addEventListener('keydown', (e) => {
