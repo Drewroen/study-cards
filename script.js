@@ -73,6 +73,10 @@ const cancelAddCard = document.getElementById('cancel-add-card');
 const saveCardBtn = document.getElementById('save-card-btn');
 const newQuestionInput = document.getElementById('new-question');
 const newAnswerInput = document.getElementById('new-answer');
+const exportModal = document.getElementById('export-modal');
+const closeExportModal = document.getElementById('close-export-modal');
+const exportOutput = document.getElementById('export-output');
+const saveExportBtn = document.getElementById('save-export-btn');
 
 function displayCard() {
     if (cards.length === 0 || !currentSetName) {
@@ -403,25 +407,30 @@ function handleDeleteCard() {
 }
 
 function handleExport() {
-    if (!currentSetName) {
-        alert('No card set selected to export.');
+    if (Object.keys(cardSets).length === 0) {
+        alert('No card sets to export.');
         return;
     }
 
-    // Create export object with current set
-    const exportData = {
-        [currentSetName]: cardSets[currentSetName]
-    };
+    // Convert all card sets to JSON string
+    const jsonString = JSON.stringify(cardSets, null, 2);
 
-    // Convert to JSON string
-    const jsonString = JSON.stringify(exportData, null, 2);
+    // Display in text box
+    exportOutput.value = jsonString;
+
+    // Show export modal
+    exportModal.classList.add('active');
+}
+
+function handleSaveExport() {
+    const jsonString = exportOutput.value;
 
     // Create blob and download
     const blob = new Blob([jsonString], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${currentSetName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
+    a.download = 'study_cards_export.json';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -463,6 +472,10 @@ cancelAddCard.addEventListener('click', () => {
 saveCardBtn.addEventListener('click', handleAddCard);
 deleteCardBtn.addEventListener('click', handleDeleteCard);
 exportBtn.addEventListener('click', handleExport);
+closeExportModal.addEventListener('click', () => {
+    exportModal.classList.remove('active');
+});
+saveExportBtn.addEventListener('click', handleSaveExport);
 
 // Keyboard navigation
 document.addEventListener('keydown', (e) => {
