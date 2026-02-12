@@ -1,0 +1,280 @@
+// Default card sets - empty to start
+const defaultCardSets = {};
+
+// LocalStorage management
+const STORAGE_KEY = 'studyCardSets';
+
+function loadCardSets() {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+        try {
+            return JSON.parse(stored);
+        } catch (e) {
+            console.error('Error parsing stored card sets:', e);
+            return { ...defaultCardSets };
+        }
+    } else {
+        // First time - save default sets to localStorage
+        saveCardSets(defaultCardSets);
+        return { ...defaultCardSets };
+    }
+}
+
+function saveCardSets(sets) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(sets));
+}
+
+function addCardSet(setName, cards) {
+    const sets = loadCardSets();
+    sets[setName] = cards;
+    saveCardSets(sets);
+    return sets;
+}
+
+function deleteCardSet(setName) {
+    const sets = loadCardSets();
+    delete sets[setName];
+    saveCardSets(sets);
+    return sets;
+}
+
+// Initialize card sets from localStorage
+let cardSets = loadCardSets();
+
+let currentSetName = Object.keys(cardSets).length > 0 ? Object.keys(cardSets)[0] : null;
+let cards = currentSetName ? [...cardSets[currentSetName]] : [];
+let currentIndex = 0;
+
+const card = document.getElementById('card');
+const questionEl = document.getElementById('question');
+const answerEl = document.getElementById('answer');
+const currentEl = document.getElementById('current');
+const totalEl = document.getElementById('total');
+const prevBtn = document.getElementById('prev-btn');
+const nextBtn = document.getElementById('next-btn');
+const shuffleBtn = document.getElementById('shuffle-btn');
+const setSelector = document.getElementById('set-selector');
+const uploadBtn = document.getElementById('upload-btn');
+const fileInput = document.getElementById('file-input');
+const setsContainer = document.getElementById('sets-container');
+
+function displayCard() {
+    if (cards.length === 0 || !currentSetName) {
+        questionEl.textContent = 'No card sets available';
+        answerEl.textContent = 'Upload a JSON file to get started';
+        totalEl.textContent = '0';
+        currentEl.textContent = '0';
+        prevBtn.disabled = true;
+        nextBtn.disabled = true;
+        return;
+    }
+
+    const currentCard = cards[currentIndex];
+    questionEl.textContent = currentCard.question;
+    answerEl.textContent = currentCard.answer;
+    currentEl.textContent = currentIndex + 1;
+    totalEl.textContent = cards.length;
+
+    // Reset flip state
+    card.classList.remove('flipped');
+
+    // Update button states
+    prevBtn.disabled = currentIndex === 0;
+    nextBtn.disabled = currentIndex === cards.length - 1;
+}
+
+function flipCard() {
+    card.classList.toggle('flipped');
+}
+
+function nextCard() {
+    if (currentIndex < cards.length - 1) {
+        currentIndex++;
+        displayCard();
+    }
+}
+
+function prevCard() {
+    if (currentIndex > 0) {
+        currentIndex--;
+        displayCard();
+    }
+}
+
+function shuffleCards() {
+    for (let i = cards.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [cards[i], cards[j]] = [cards[j], cards[i]];
+    }
+    currentIndex = 0;
+    displayCard();
+}
+
+function changeSet(setName) {
+    currentSetName = setName;
+    cards = [...cardSets[setName]];
+    currentIndex = 0;
+    displayCard();
+}
+
+function populateSetSelector() {
+    setSelector.innerHTML = '';
+
+    if (Object.keys(cardSets).length === 0) {
+        const option = document.createElement('option');
+        option.textContent = 'No card sets - upload one to start';
+        option.disabled = true;
+        setSelector.appendChild(option);
+        return;
+    }
+
+    Object.keys(cardSets).forEach(setName => {
+        const option = document.createElement('option');
+        option.value = setName;
+        option.textContent = setName;
+        setSelector.appendChild(option);
+    });
+    setSelector.value = currentSetName;
+}
+
+function renderSetsList() {
+    setsContainer.innerHTML = '';
+
+    if (Object.keys(cardSets).length === 0) {
+        const emptyMessage = document.createElement('p');
+        emptyMessage.textContent = 'No card sets yet. Upload a JSON file to get started!';
+        emptyMessage.style.color = '#666';
+        emptyMessage.style.fontStyle = 'italic';
+        setsContainer.appendChild(emptyMessage);
+        return;
+    }
+
+    Object.keys(cardSets).forEach(setName => {
+        const setItem = document.createElement('div');
+        setItem.className = 'set-item';
+
+        const setInfo = document.createElement('span');
+        setInfo.textContent = `${setName} (${cardSets[setName].length} cards)`;
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.className = 'delete-btn';
+        deleteBtn.onclick = () => handleDeleteSet(setName);
+
+        setItem.appendChild(setInfo);
+        setItem.appendChild(deleteBtn);
+        setsContainer.appendChild(setItem);
+    });
+}
+
+function handleDeleteSet(setName) {
+    if (confirm(`Are you sure you want to delete "${setName}"?`)) {
+        cardSets = deleteCardSet(setName);
+
+        // If deleted set was current, switch to first available set or reset
+        if (currentSetName === setName) {
+            if (Object.keys(cardSets).length > 0) {
+                currentSetName = Object.keys(cardSets)[0];
+                cards = [...cardSets[currentSetName]];
+            } else {
+                currentSetName = null;
+                cards = [];
+            }
+            currentIndex = 0;
+            displayCard();
+        }
+
+        populateSetSelector();
+        renderSetsList();
+    }
+}
+
+function handleFileUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const uploadedData = JSON.parse(e.target.result);
+
+            // Validate the uploaded JSON structure
+            if (typeof uploadedData !== 'object' || uploadedData === null) {
+                throw new Error('Invalid JSON format. Expected an object.');
+            }
+
+            // Process each set in the uploaded JSON
+            let addedSets = 0;
+            for (const [setName, setCards] of Object.entries(uploadedData)) {
+                if (!Array.isArray(setCards)) {
+                    console.warn(`Skipping "${setName}": cards must be an array`);
+                    continue;
+                }
+
+                // Validate card structure
+                const validCards = setCards.filter(card =>
+                    card &&
+                    typeof card === 'object' &&
+                    'question' in card &&
+                    'answer' in card
+                );
+
+                if (validCards.length === 0) {
+                    console.warn(`Skipping "${setName}": no valid cards found`);
+                    continue;
+                }
+
+                cardSets = addCardSet(setName, validCards);
+                addedSets++;
+            }
+
+            if (addedSets === 0) {
+                alert('No valid card sets found in the uploaded file.');
+            } else {
+                alert(`Successfully added ${addedSets} card set(s)!`);
+
+                // If this is the first set(s), initialize the current set
+                if (!currentSetName && Object.keys(cardSets).length > 0) {
+                    currentSetName = Object.keys(cardSets)[0];
+                    cards = [...cardSets[currentSetName]];
+                    currentIndex = 0;
+                }
+
+                populateSetSelector();
+                renderSetsList();
+                displayCard();
+            }
+        } catch (error) {
+            alert(`Error reading file: ${error.message}`);
+        }
+
+        // Reset file input
+        fileInput.value = '';
+    };
+
+    reader.readAsText(file);
+}
+
+// Event listeners
+card.addEventListener('click', flipCard);
+nextBtn.addEventListener('click', nextCard);
+prevBtn.addEventListener('click', prevCard);
+shuffleBtn.addEventListener('click', shuffleCards);
+setSelector.addEventListener('change', (e) => changeSet(e.target.value));
+uploadBtn.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', handleFileUpload);
+
+// Keyboard navigation
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight') nextCard();
+    if (e.key === 'ArrowLeft') prevCard();
+    if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        flipCard();
+    }
+});
+
+// Initialize
+populateSetSelector();
+renderSetsList();
+displayCard();
