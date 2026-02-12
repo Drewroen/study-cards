@@ -74,6 +74,19 @@
             </div>
         </div>
 
+        <div id="shuffle-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Shuffle Cards</h2>
+                    <button id="close-shuffle-modal" class="icon-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <button id="shuffle-all-btn" class="primary-btn" style="margin-bottom: 0.75rem;">All Questions</button>
+                    <button id="shuffle-starred-btn" class="primary-btn">Starred Questions Only</button>
+                </div>
+            </div>
+        </div>
+
         <div class="study-area">
             <select id="set-selector"></select>
 
@@ -82,6 +95,7 @@
             </div>
 
             <div class="card" id="card">
+                <button id="star-btn" class="star-btn" aria-label="Star card">☆</button>
                 <div class="card-inner" id="card-inner">
                     <div class="card-front">
                         <p id="question">Loading...</p>

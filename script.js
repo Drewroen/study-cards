@@ -3,6 +3,7 @@ const defaultCardSets = {};
 
 // LocalStorage management
 const STORAGE_KEY = 'studyCardSets';
+const STARRED_KEY = 'studyCardStarred';
 
 function loadCardSets() {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -22,6 +23,44 @@ function loadCardSets() {
 
 function saveCardSets(sets) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(sets));
+}
+
+function loadStarredCards() {
+    const stored = localStorage.getItem(STARRED_KEY);
+    if (stored) {
+        try {
+            return JSON.parse(stored);
+        } catch (e) {
+            console.error('Error parsing starred cards:', e);
+            return {};
+        }
+    }
+    return {};
+}
+
+function saveStarredCards(starred) {
+    localStorage.setItem(STARRED_KEY, JSON.stringify(starred));
+}
+
+function getCardKey(setName, cardIndex) {
+    return `${setName}:${cardIndex}`;
+}
+
+function isCardStarred(setName, cardIndex) {
+    const starred = loadStarredCards();
+    return starred[getCardKey(setName, cardIndex)] === true;
+}
+
+function toggleCardStar(setName, cardIndex) {
+    const starred = loadStarredCards();
+    const key = getCardKey(setName, cardIndex);
+    if (starred[key]) {
+        delete starred[key];
+    } else {
+        starred[key] = true;
+    }
+    saveStarredCards(starred);
+    return starred[key] === true;
 }
 
 function addCardSet(setName, cards) {
@@ -77,6 +116,11 @@ const exportModal = document.getElementById('export-modal');
 const closeExportModal = document.getElementById('close-export-modal');
 const exportOutput = document.getElementById('export-output');
 const saveExportBtn = document.getElementById('save-export-btn');
+const starBtn = document.getElementById('star-btn');
+const shuffleModal = document.getElementById('shuffle-modal');
+const closeShuffleModal = document.getElementById('close-shuffle-modal');
+const shuffleAllBtn = document.getElementById('shuffle-all-btn');
+const shuffleStarredBtn = document.getElementById('shuffle-starred-btn');
 
 function displayCard() {
     if (cards.length === 0 || !currentSetName) {
@@ -88,6 +132,7 @@ function displayCard() {
         nextBtn.disabled = true;
         addCardBtn.disabled = !currentSetName;
         deleteCardBtn.disabled = true;
+        starBtn.style.display = 'none';
         return;
     }
 
@@ -105,6 +150,28 @@ function displayCard() {
     nextBtn.disabled = currentIndex === cards.length - 1;
     addCardBtn.disabled = false;
     deleteCardBtn.disabled = false;
+    starBtn.style.display = 'block';
+
+    // Update star button
+    updateStarButton();
+}
+
+function updateStarButton() {
+    if (!currentSetName || cards.length === 0) return;
+
+    // Find the original index of the current card in the cardSets
+    const originalIndex = cardSets[currentSetName].findIndex(
+        card => card.question === cards[currentIndex].question &&
+                card.answer === cards[currentIndex].answer
+    );
+
+    if (originalIndex !== -1 && isCardStarred(currentSetName, originalIndex)) {
+        starBtn.textContent = '★';
+        starBtn.classList.add('starred');
+    } else {
+        starBtn.textContent = '☆';
+        starBtn.classList.remove('starred');
+    }
 }
 
 function flipCard() {
@@ -125,11 +192,45 @@ function prevCard() {
     }
 }
 
-function shuffleCards() {
-    for (let i = cards.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [cards[i], cards[j]] = [cards[j], cards[i]];
+function handleStarToggle() {
+    if (!currentSetName || cards.length === 0) return;
+
+    // Find the original index of the current card in the cardSets
+    const originalIndex = cardSets[currentSetName].findIndex(
+        card => card.question === cards[currentIndex].question &&
+                card.answer === cards[currentIndex].answer
+    );
+
+    if (originalIndex !== -1) {
+        toggleCardStar(currentSetName, originalIndex);
+        updateStarButton();
     }
+}
+
+function shuffleCards(starredOnly = false) {
+    let cardsToShuffle;
+
+    if (starredOnly) {
+        // Filter for starred cards only
+        cardsToShuffle = cardSets[currentSetName].filter((card, index) =>
+            isCardStarred(currentSetName, index)
+        );
+
+        if (cardsToShuffle.length === 0) {
+            alert('No starred cards in this set.');
+            return;
+        }
+    } else {
+        cardsToShuffle = [...cardSets[currentSetName]];
+    }
+
+    // Shuffle the array
+    for (let i = cardsToShuffle.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [cardsToShuffle[i], cardsToShuffle[j]] = [cardsToShuffle[j], cardsToShuffle[i]];
+    }
+
+    cards = cardsToShuffle;
     currentIndex = 0;
     displayCard();
 }
@@ -441,8 +542,25 @@ function handleSaveExport() {
 card.addEventListener('click', flipCard);
 nextBtn.addEventListener('click', nextCard);
 prevBtn.addEventListener('click', prevCard);
-shuffleBtn.addEventListener('click', shuffleCards);
+shuffleBtn.addEventListener('click', () => {
+    shuffleModal.classList.add('active');
+});
 setSelector.addEventListener('change', (e) => changeSet(e.target.value));
+starBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    handleStarToggle();
+});
+closeShuffleModal.addEventListener('click', () => {
+    shuffleModal.classList.remove('active');
+});
+shuffleAllBtn.addEventListener('click', () => {
+    shuffleModal.classList.remove('active');
+    shuffleCards(false);
+});
+shuffleStarredBtn.addEventListener('click', () => {
+    shuffleModal.classList.remove('active');
+    shuffleCards(true);
+});
 uploadBtn.addEventListener('click', () => fileInput.click());
 fileInput.addEventListener('change', handleFileUpload);
 pasteBtn.addEventListener('click', () => {
