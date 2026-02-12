@@ -65,6 +65,13 @@ const cancelBtn = document.getElementById('cancel-btn');
 const manageBtn = document.getElementById('manage-btn');
 const manageModal = document.getElementById('manage-modal');
 const closeModal = document.getElementById('close-modal');
+const addCardBtn = document.getElementById('add-card-btn');
+const deleteCardBtn = document.getElementById('delete-card-btn');
+const addCardModal = document.getElementById('add-card-modal');
+const cancelAddCard = document.getElementById('cancel-add-card');
+const saveCardBtn = document.getElementById('save-card-btn');
+const newQuestionInput = document.getElementById('new-question');
+const newAnswerInput = document.getElementById('new-answer');
 
 function displayCard() {
     if (cards.length === 0 || !currentSetName) {
@@ -74,6 +81,8 @@ function displayCard() {
         currentEl.textContent = '0';
         prevBtn.disabled = true;
         nextBtn.disabled = true;
+        addCardBtn.disabled = !currentSetName;
+        deleteCardBtn.disabled = true;
         return;
     }
 
@@ -89,6 +98,8 @@ function displayCard() {
     // Update button states
     prevBtn.disabled = currentIndex === 0;
     nextBtn.disabled = currentIndex === cards.length - 1;
+    addCardBtn.disabled = false;
+    deleteCardBtn.disabled = false;
 }
 
 function flipCard() {
@@ -328,6 +339,68 @@ function handlePasteImport() {
     }
 }
 
+function handleAddCard() {
+    const question = newQuestionInput.value.trim();
+    const answer = newAnswerInput.value.trim();
+
+    if (!question || !answer) {
+        alert('Please enter both a question and an answer.');
+        return;
+    }
+
+    if (!currentSetName) {
+        alert('No set selected. Please create or select a set first.');
+        return;
+    }
+
+    // Add the new card to the current set
+    const newCard = { question, answer };
+    cardSets[currentSetName].push(newCard);
+    saveCardSets(cardSets);
+
+    // Update the current cards array
+    cards.push(newCard);
+
+    // Close modal and clear inputs
+    addCardModal.classList.remove('active');
+    newQuestionInput.value = '';
+    newAnswerInput.value = '';
+
+    // Update display
+    renderSetsList();
+    displayCard();
+
+    alert('Card added successfully!');
+}
+
+function handleDeleteCard() {
+    if (!currentSetName || cards.length === 0) {
+        return;
+    }
+
+    if (!confirm('Are you sure you want to delete this card?')) {
+        return;
+    }
+
+    // Remove the card from the set
+    cardSets[currentSetName].splice(currentIndex, 1);
+    saveCardSets(cardSets);
+
+    // Update the current cards array
+    cards.splice(currentIndex, 1);
+
+    // Adjust current index if needed
+    if (currentIndex >= cards.length && cards.length > 0) {
+        currentIndex = cards.length - 1;
+    } else if (cards.length === 0) {
+        currentIndex = 0;
+    }
+
+    // Update display
+    renderSetsList();
+    displayCard();
+}
+
 // Event listeners
 card.addEventListener('click', flipCard);
 nextBtn.addEventListener('click', nextCard);
@@ -351,6 +424,17 @@ manageBtn.addEventListener('click', () => {
 closeModal.addEventListener('click', () => {
     manageModal.classList.remove('active');
 });
+addCardBtn.addEventListener('click', () => {
+    addCardModal.classList.add('active');
+    newQuestionInput.focus();
+});
+cancelAddCard.addEventListener('click', () => {
+    addCardModal.classList.remove('active');
+    newQuestionInput.value = '';
+    newAnswerInput.value = '';
+});
+saveCardBtn.addEventListener('click', handleAddCard);
+deleteCardBtn.addEventListener('click', handleDeleteCard);
 
 // Keyboard navigation
 document.addEventListener('keydown', (e) => {

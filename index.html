@@ -44,6 +44,22 @@
 
         <input type="file" id="file-input" accept=".json" style="display: none;">
 
+        <div id="add-card-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Add Card</h2>
+                    <button id="cancel-add-card" class="icon-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <label for="new-question">Question:</label>
+                    <textarea id="new-question" placeholder="Enter question"></textarea>
+                    <label for="new-answer">Answer:</label>
+                    <textarea id="new-answer" placeholder="Enter answer"></textarea>
+                    <button id="save-card-btn" class="primary-btn">Add Card</button>
+                </div>
+            </div>
+        </div>
+
         <div class="study-area">
             <select id="set-selector"></select>
 
@@ -63,9 +79,11 @@
             </div>
 
             <div class="controls">
+                <button id="delete-card-btn" class="control-btn" aria-label="Delete card" title="Delete current card">🗑</button>
                 <button id="prev-btn" class="control-btn" aria-label="Previous">&larr;</button>
                 <button id="shuffle-btn" class="control-btn shuffle" aria-label="Shuffle">&#8634;</button>
                 <button id="next-btn" class="control-btn" aria-label="Next">&rarr;</button>
+                <button id="add-card-btn" class="control-btn" aria-label="Add card" title="Add card">+</button>
             </div>
         </div>
     </div>
