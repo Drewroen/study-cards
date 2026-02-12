@@ -2,56 +2,71 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Study Cards</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
-        <h1>Study Cards</h1>
+        <header>
+            <h1>Study Cards</h1>
+            <button id="manage-btn" class="icon-btn" aria-label="Manage card sets">⚙</button>
+        </header>
 
-        <div class="management-section">
-            <details>
-                <summary>Manage Card Sets</summary>
-                <div class="management-content">
-                    <div class="upload-section">
-                        <input type="file" id="file-input" accept=".json" style="display: none;">
-                        <button id="upload-btn">Upload JSON Card Set</button>
-                        <p class="upload-hint">Upload a JSON file with format: { "Set Name": [{ "question": "...", "answer": "..." }] }</p>
-                    </div>
-                    <div class="sets-list">
-                        <h3>Your Card Sets:</h3>
-                        <div id="sets-container"></div>
-                    </div>
+        <div id="manage-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Manage Sets</h2>
+                    <button id="close-modal" class="icon-btn">&times;</button>
                 </div>
-            </details>
-        </div>
-
-        <div class="set-selector-container">
-            <select id="set-selector"></select>
-        </div>
-
-        <div class="progress">
-            <span id="current">1</span> / <span id="total">0</span>
-        </div>
-
-        <div class="card" id="card">
-            <div class="card-inner" id="card-inner">
-                <div class="card-front">
-                    <p id="question">Loading...</p>
-                </div>
-                <div class="card-back">
-                    <p id="answer">Loading...</p>
+                <div class="modal-body">
+                    <div class="button-group">
+                        <button id="upload-btn" class="secondary-btn">Upload JSON</button>
+                        <button id="paste-btn" class="secondary-btn">Paste JSON</button>
+                    </div>
+                    <div id="sets-container"></div>
                 </div>
             </div>
         </div>
 
-        <p class="hint">Click the card to flip</p>
+        <div id="paste-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Paste JSON</h2>
+                    <button id="cancel-btn" class="icon-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <textarea id="json-input" placeholder='{"Set Name": [{"question": "Q", "answer": "A"}]}'></textarea>
+                    <button id="import-btn" class="primary-btn">Import</button>
+                </div>
+            </div>
+        </div>
 
-        <div class="controls">
-            <button id="prev-btn">Previous</button>
-            <button id="shuffle-btn">Shuffle</button>
-            <button id="next-btn">Next</button>
+        <input type="file" id="file-input" accept=".json" style="display: none;">
+
+        <div class="study-area">
+            <select id="set-selector"></select>
+
+            <div class="progress">
+                <span id="current">0</span> / <span id="total">0</span>
+            </div>
+
+            <div class="card" id="card">
+                <div class="card-inner" id="card-inner">
+                    <div class="card-front">
+                        <p id="question">Loading...</p>
+                    </div>
+                    <div class="card-back">
+                        <p id="answer">Loading...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button id="prev-btn" class="control-btn" aria-label="Previous">&larr;</button>
+                <button id="shuffle-btn" class="control-btn shuffle" aria-label="Shuffle">&#8634;</button>
+                <button id="next-btn" class="control-btn" aria-label="Next">&rarr;</button>
+            </div>
         </div>
     </div>
 

@@ -57,6 +57,14 @@ const setSelector = document.getElementById('set-selector');
 const uploadBtn = document.getElementById('upload-btn');
 const fileInput = document.getElementById('file-input');
 const setsContainer = document.getElementById('sets-container');
+const pasteBtn = document.getElementById('paste-btn');
+const pasteModal = document.getElementById('paste-modal');
+const jsonInput = document.getElementById('json-input');
+const importBtn = document.getElementById('import-btn');
+const cancelBtn = document.getElementById('cancel-btn');
+const manageBtn = document.getElementById('manage-btn');
+const manageModal = document.getElementById('manage-modal');
+const closeModal = document.getElementById('close-modal');
 
 function displayCard() {
     if (cards.length === 0 || !currentSetName) {
@@ -255,6 +263,71 @@ function handleFileUpload(event) {
     reader.readAsText(file);
 }
 
+function handlePasteImport() {
+    const jsonText = jsonInput.value.trim();
+    if (!jsonText) {
+        alert('Please paste some JSON first.');
+        return;
+    }
+
+    try {
+        const uploadedData = JSON.parse(jsonText);
+
+        // Validate the uploaded JSON structure
+        if (typeof uploadedData !== 'object' || uploadedData === null) {
+            throw new Error('Invalid JSON format. Expected an object.');
+        }
+
+        // Process each set in the uploaded JSON
+        let addedSets = 0;
+        for (const [setName, setCards] of Object.entries(uploadedData)) {
+            if (!Array.isArray(setCards)) {
+                console.warn(`Skipping "${setName}": cards must be an array`);
+                continue;
+            }
+
+            // Validate card structure
+            const validCards = setCards.filter(card =>
+                card &&
+                typeof card === 'object' &&
+                'question' in card &&
+                'answer' in card
+            );
+
+            if (validCards.length === 0) {
+                console.warn(`Skipping "${setName}": no valid cards found`);
+                continue;
+            }
+
+            cardSets = addCardSet(setName, validCards);
+            addedSets++;
+        }
+
+        if (addedSets === 0) {
+            alert('No valid card sets found in the pasted JSON.');
+        } else {
+            alert(`Successfully added ${addedSets} card set(s)!`);
+
+            // If this is the first set(s), initialize the current set
+            if (!currentSetName && Object.keys(cardSets).length > 0) {
+                currentSetName = Object.keys(cardSets)[0];
+                cards = [...cardSets[currentSetName]];
+                currentIndex = 0;
+            }
+
+            populateSetSelector();
+            renderSetsList();
+            displayCard();
+
+            // Close modal and clear input
+            pasteModal.classList.remove('active');
+            jsonInput.value = '';
+        }
+    } catch (error) {
+        alert(`Error parsing JSON: ${error.message}`);
+    }
+}
+
 // Event listeners
 card.addEventListener('click', flipCard);
 nextBtn.addEventListener('click', nextCard);
@@ -263,6 +336,21 @@ shuffleBtn.addEventListener('click', shuffleCards);
 setSelector.addEventListener('change', (e) => changeSet(e.target.value));
 uploadBtn.addEventListener('click', () => fileInput.click());
 fileInput.addEventListener('change', handleFileUpload);
+pasteBtn.addEventListener('click', () => {
+    pasteModal.classList.add('active');
+    jsonInput.focus();
+});
+cancelBtn.addEventListener('click', () => {
+    pasteModal.classList.remove('active');
+    jsonInput.value = '';
+});
+importBtn.addEventListener('click', handlePasteImport);
+manageBtn.addEventListener('click', () => {
+    manageModal.classList.add('active');
+});
+closeModal.addEventListener('click', () => {
+    manageModal.classList.remove('active');
+});
 
 // Keyboard navigation
 document.addEventListener('keydown', (e) => {
